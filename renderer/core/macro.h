@@ -13,4 +13,7 @@
 #define UNUSED_VAR(x) ((void)(x))
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof((array)[0]))
 
+//define LOGII(x, value) {static int count; if(count++ %value == 0) printf()}
+
+
 #endif

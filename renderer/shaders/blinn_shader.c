@@ -72,6 +72,7 @@ static vec4_t common_vertex_shader(blinn_attribs_t *attribs,
     vec3_t input_normal = attribs->normal;
     vec3_t world_normal = mat3_mul_vec3(normal_matrix, input_normal);
 
+    printf("xww: clip_position=%f %f %f %f\n", clip_position.x, clip_position.y, clip_position.z, clip_position.w);
     varyings->world_position = vec3_from_vec4(world_position);
     varyings->depth_position = vec3_from_vec4(depth_position);
     varyings->texcoord = attribs->texcoord;
@@ -305,7 +306,19 @@ static void draw_model(model_t *model, framebuffer_t *framebuffer,
     uniforms = (blinn_uniforms_t*)program_get_uniforms(model->program);
     uniforms->shadow_pass = shadow_pass;
     for (i = 0; i < num_faces; i++) {
+        if (i > 0) break;
+        static int count = 0;
+        //if(count++ % 180 ==0)
+            printf("xww: num_faces=%d distance=%f\n", num_faces, model->distance);
+        vertices[0 * 3 + 0].position.x = 6.2;
+        vertices[0 * 3 + 0].position.y = 1.2;
+        vertices[0 * 3 + 1].position.x = 2.0;
+        vertices[0 * 3 + 1].position.y = 2.0;
+        vertices[0 * 3 + 2].position.x = 8.4;
+        vertices[0 * 3 + 2].position.y = 2.0;
+
         for (j = 0; j < 3; j++) {
+            // build_meshÉèÖÃposition¡¢texcoord¡¢normal
             vertex_t vertex = vertices[i * 3 + j];
             attribs = (blinn_attribs_t*)program_get_attribs(program, j);
             attribs->position = vertex.position;
@@ -313,6 +326,10 @@ static void draw_model(model_t *model, framebuffer_t *framebuffer,
             attribs->normal = vertex.normal;
             attribs->joint = vertex.joint;
             attribs->weight = vertex.weight;
+            printf("xww: j=%d vertex.position=%f %f %f, vertex.texcoord=%f %f, vertex.normal=%f %f %f, \
+                \n                           vertex.joint=%f %f %f %f, vertex.weight=%f %f %f %f\n", j,
+                vertex.position.x, vertex.position.y, vertex.position.z, vertex.texcoord.x, vertex.texcoord.y, vertex.normal.x, vertex.normal.y, vertex.normal.z,
+                vertex.joint.x, vertex.joint.y, vertex.joint.z, vertex.joint.w, vertex.weight.x, vertex.weight.y, vertex.weight.z, vertex.weight.w);
         }
         graphics_draw_triangle(framebuffer, program);
     }

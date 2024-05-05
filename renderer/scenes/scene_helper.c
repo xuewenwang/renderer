@@ -95,6 +95,16 @@ static int wrap_knob(const char *knob) {
     }
 }
 
+/*
+*@E:\Doc\Graphic\renderer\assets\azura\azura.scn
+lighting:
+    background: 0.15 0.15 0.15
+    environment: venice
+    skybox: off
+    shadow: off
+    ambient: 0.5
+    punctual: 0.7
+*/
 static scene_light_t read_light(FILE *file) {
     scene_light_t light;
     char header[LINE_SIZE];

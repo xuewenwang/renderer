@@ -208,6 +208,7 @@ static int clip_against_plane(
     int i, j;
 
     assert(in_num_vertices >= 3 && in_num_vertices <= MAX_VARYINGS);
+    printf("xww: plane=%d in_num_vertices=%d varying_num_floats=%d\n", plane, in_num_vertices, varying_num_floats);
     for (i = 0; i < in_num_vertices; i++) {
         int prev_index = (i - 1 + in_num_vertices) % in_num_vertices;
         int curr_index = i;
@@ -278,6 +279,11 @@ static int clip_triangle(
         int sizeof_varyings,
         vec4_t in_coords[MAX_VARYINGS], void *in_varyings[MAX_VARYINGS],
         vec4_t out_coords[MAX_VARYINGS], void *out_varyings[MAX_VARYINGS]) {
+
+    static int count = 0;
+    //if(count++ % 18*10 == 0)
+        printf("[xww]: sizeof_varyings=%d sizeof(float)=%d\n", sizeof_varyings, sizeof(float));
+
     int v0_visible = is_vertex_visible(in_coords[0]);
     int v1_visible = is_vertex_visible(in_coords[1]);
     int v2_visible = is_vertex_visible(in_coords[2]);
@@ -290,9 +296,11 @@ static int clip_triangle(
         memcpy(out_varyings[2], in_varyings[2], sizeof_varyings);
         return 3;
     } else {
-        int varying_num_floats = sizeof_varyings / sizeof(float);
+        printf("xww: clip_triangle\n");
+        int varying_num_floats = sizeof_varyings / sizeof(float);  //varying_num_floats=11
         int num_vertices = 3;
         CLIP_IN2OUT(POSITIVE_W);
+
         CLIP_OUT2IN(POSITIVE_X);
         CLIP_IN2OUT(NEGATIVE_X);
         CLIP_OUT2IN(POSITIVE_Y);
@@ -419,6 +427,8 @@ static void interpolate_varyings(
     float weight2 = recip_w[2] * weights.z;
     float normalizer = 1 / (weight0 + weight1 + weight2);
     int i;
+
+    //printf("xww: interpolate_varyings\n");
     for (i = 0; i < num_floats; i++) {
         float sum = src0[i] * weight0 + src1[i] * weight1 + src2[i] * weight2;
         dst[i] = sum * normalizer;
@@ -436,6 +446,7 @@ static void draw_fragment(framebuffer_t *framebuffer, program_t *program,
                                      program->shader_uniforms,
                                      &discard,
                                      backface);
+    //printf("xww: discard=%d\n", discard);
     if (discard) {
         return;
     }
@@ -451,6 +462,12 @@ static void draw_fragment(framebuffer_t *framebuffer, program_t *program,
         color.y = color.y * color.w + float_from_uchar(dst_g) * (1 - color.w);
         color.z = color.z * color.w + float_from_uchar(dst_b) * (1 - color.w);
     }
+
+    //printf("xww color:%f %f %f %f\n", color.x, color.y, color.z, color.w);
+
+    color.x = 1.0;
+    color.y = 0.0;
+    color.z = 0.0;
 
     /* write color and depth */
     framebuffer->color_buffer[index * 4 + 0] = float_to_uchar(color.x);
@@ -477,11 +494,16 @@ static int rasterize_triangle(framebuffer_t *framebuffer, program_t *program,
         ndc_coords[i] = vec3_div(clip_coord, clip_coords[i].w);
     }
 
+    printf("xww: ndc_coords:%f %f %f, %f %f %f, %f %f %f\n", ndc_coords[0].x, ndc_coords[0].y, ndc_coords[0].z,
+        ndc_coords[1].x, ndc_coords[1].y, ndc_coords[1].z, ndc_coords[2].x, ndc_coords[2].y, ndc_coords[2].z);
+
     /* back-face culling */
     backface = is_back_facing(ndc_coords);
     if (backface && !program->double_sided) {
         return 1;
     }
+
+    printf("xww:backface=%d\n", backface);
 
     /* reciprocals of w */
     for (i = 0; i < 3; i++) {
@@ -495,8 +517,12 @@ static int rasterize_triangle(framebuffer_t *framebuffer, program_t *program,
         screen_depths[i] = window_coord.z;
     }
 
+    printf("xww: screen:%f %f %f, %f %f %f, %f %f %f\n", screen_coords[0].x, screen_coords[0].y, screen_depths[0],
+        screen_coords[1].x, screen_coords[1].y, screen_depths[1], screen_coords[2].x, screen_coords[2].y, screen_depths[2]);
+
     /* perform rasterization */
     bbox = find_bounding_box(screen_coords, width, height);
+    printf("xww: bbox.min_x=%d bbox.max_x=%d bbox.min_y=%d bbox.max_y=%d\n", bbox.min_x, bbox.max_x, bbox.min_y, bbox.max_y);
     for (x = bbox.min_x; x <= bbox.max_x; x++) {
         for (y = bbox.min_y; y <= bbox.max_y; y++) {
             vec2_t point = vec2_new((float)x + 0.5f, (float)y + 0.5f);
@@ -504,7 +530,9 @@ static int rasterize_triangle(framebuffer_t *framebuffer, program_t *program,
             int weight0_okay = weights.x > -EPSILON;
             int weight1_okay = weights.y > -EPSILON;
             int weight2_okay = weights.z > -EPSILON;
+            //printf("xww: x=%d y=%d,weights=%f %f %f,weight_okay=%d %d %d\n", x, y, weights.x, weights.y, weights.z, weight0_okay, weight1_okay, weight2_okay);
             if (weight0_okay && weight1_okay && weight2_okay) {
+               // printf("xww draw_fragment\n");
                 int index = y * width + x;
                 float depth = interpolate_depth(screen_depths, weights);
                 /* early depth testing */
@@ -527,6 +555,7 @@ void graphics_draw_triangle(framebuffer_t *framebuffer, program_t *program) {
 
     /* execute vertex shader */
     for (i = 0; i < 3; i++) {
+        // in_varyings在blinn_vertex_shader赋值，shader_uniforms在update_model赋值
         vec4_t clip_coord = program->vertex_shader(program->shader_attribs[i],
                                                    program->in_varyings[i],
                                                    program->shader_uniforms);
@@ -534,6 +563,7 @@ void graphics_draw_triangle(framebuffer_t *framebuffer, program_t *program) {
     }
 
     /* triangle clipping */
+    //sizeof_varyings=sizeof(blinn_varyings_t);
     num_vertices = clip_triangle(program->sizeof_varyings,
                                  program->in_coords, program->in_varyings,
                                  program->out_coords, program->out_varyings);
@@ -546,6 +576,8 @@ void graphics_draw_triangle(framebuffer_t *framebuffer, program_t *program) {
         vec4_t clip_coords[3];
         void *varyings[3];
         int is_culled;
+
+        printf("xww: num_vertices=%d i=%d\n", num_vertices, i);
 
         clip_coords[0] = program->out_coords[index0];
         clip_coords[1] = program->out_coords[index1];

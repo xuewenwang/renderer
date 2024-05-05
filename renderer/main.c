@@ -15,6 +15,7 @@ static testcase_t g_testcases[] = {
     {"pbr", test_pbr},
 };
 
+//最初入口函数
 int main(int argc, char *argv[]) {
     int num_testcases = ARRAY_SIZE(g_testcases);
     const char *testname = NULL;
@@ -33,7 +34,10 @@ int main(int argc, char *argv[]) {
             }
         }
     } else {
+        //如果无参数传入，执行这里，随机生成testcase
         i = rand() % num_testcases;
+        i = 0;
+        printf("xww: to debug set testcase %d\n", i);
         testname = g_testcases[i].testname;
         testfunc = g_testcases[i].testfunc;
     }

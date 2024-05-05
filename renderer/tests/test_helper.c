@@ -316,6 +316,8 @@ scene_t *test_create_scene(creator_t creators[], const char *scene_name) {
         }
         if (num_creators > 0) {
             int index = rand() % num_creators;
+            index = 0;
+            printf("xww: to debug set scene %d\n", index);
             scene_name = creators[index].scene_name;
             printf("scene: %s\n", scene_name);
             scene = creators[index].create_scene();
@@ -325,6 +327,7 @@ scene_t *test_create_scene(creator_t creators[], const char *scene_name) {
         for (i = 0; creators[i].scene_name != NULL; i++) {
             if (strcmp(creators[i].scene_name, scene_name) == 0) {
                 printf("scene: %s\n", scene_name);
+                // blinn_azura_scene
                 scene = creators[i].create_scene();
                 break;
             }
@@ -422,6 +425,11 @@ static void sort_models(model_t **models, mat4_t view_matrix) {
             vec4_t view_pos = mat4_mul_vec4(view_matrix, world_pos);
             model->distance = -view_pos.z;
         }
+        /*
+        如果compar返回值小于0（< 0），那么p1所指向元素会被排在p2所指向元素的左面；
+        如果compar返回值等于0（= 0），那么p1所指向元素与p2所指向元素的顺序不确定；
+        如果compar返回值大于0（> 0），那么p1所指向元素会被排在p2所指向元素的右面。
+        */
         qsort(models, num_models, sizeof(model_t*), compare_models);
     }
 }
@@ -453,11 +461,14 @@ void test_draw_scene(scene_t *scene, framebuffer_t *framebuffer,
         texture_from_depthbuffer(scene->shadow_map, scene->shadow_buffer);
     }
 
+    //对model进行排序
     sort_models(models, perframe->camera_view_matrix);
     framebuffer_clear_color(framebuffer, scene->background);
     framebuffer_clear_depth(framebuffer, 1);
     if (skybox == NULL || perframe->layer_view >= 0) {
         for (i = 0; i < num_models; i++) {
+            //printf("xww: 1 num_models=%d\n", num_models);
+            if (i > 0) break;
             model_t *model = models[i];
             model->draw(model, framebuffer, 0);
         }
@@ -474,10 +485,12 @@ void test_draw_scene(scene_t *scene, framebuffer_t *framebuffer,
 
         for (i = 0; i < num_opaques; i++) {
             model_t *model = models[i];
+            printf("xww: num_opaques=%d\n", num_opaques);
             model->draw(model, framebuffer, 0);
         }
         skybox->draw(skybox, framebuffer, 0);
         for (i = num_opaques; i < num_models; i++) {
+            printf("xww: 2 num_models=%d\n", num_models);
             model_t *model = models[i];
             model->draw(model, framebuffer, 0);
         }

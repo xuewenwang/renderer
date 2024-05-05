@@ -41,6 +41,7 @@ static mesh_t *build_mesh(
         assert(position_index >= 0 && position_index < darray_size(positions));
         assert(texcoord_index >= 0 && texcoord_index < darray_size(texcoords));
         assert(normal_index >= 0 && normal_index < darray_size(normals));
+        //根据"f "保存的位置索引、纹理索引、法线索引来找到对应的位置、纹理和法线值，然后设置好
         vertices[i].position = positions[position_index];
         vertices[i].texcoord = texcoords[texcoord_index];
         vertices[i].normal = normals[normal_index];
@@ -73,6 +74,7 @@ static mesh_t *build_mesh(
         bbox_max = vec3_max(bbox_max, vertices[i].position);
     }
 
+    printf("xww: num_faces=%d\n", num_faces);
     mesh = (mesh_t*)malloc(sizeof(mesh_t));
     mesh->num_faces = num_faces;
     mesh->vertices = vertices;
@@ -140,6 +142,7 @@ static mesh_t *load_obj(const char *filename) {
             darray_push(tangents, tangent);
         } else if (strncmp(line, "# ext.joint ", 12) == 0) {    /* joint */
             vec4_t joint;
+            printf("xww joint\n");  //4有骨骼
             items = sscanf(line, "# ext.joint %f %f %f %f",
                            &joint.x, &joint.y, &joint.z, &joint.w);
             assert(items == 4);
@@ -155,6 +158,7 @@ static mesh_t *load_obj(const char *filename) {
     }
     fclose(file);
 
+    // 一个scn文件有多个model，model有对应的obj文件
     mesh = build_mesh(positions, texcoords, normals, tangents, joints, weights,
                       position_indices, texcoord_indices, normal_indices);
     darray_free(positions);
