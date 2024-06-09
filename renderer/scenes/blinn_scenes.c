@@ -3,8 +3,10 @@
 #include "scene_helper.h"
 
 scene_t *blinn_azura_scene(void) {
-    mat4_t translation = mat4_translate(-6.073f, -1.278f, 0.280f);
-    mat4_t scale = mat4_scale(0.378f, 0.378f, 0.378f);
+    //mat4_t translation = mat4_translate(-6.073f, -1.278f, 0.280f);
+    mat4_t translation = mat4_translate(-6.2f, -1.68f, 1.1f);
+    //mat4_t scale = mat4_scale(0.378f, 0.378f, 0.378f);
+    mat4_t scale = mat4_scale(1.0f,1.0f,1.0f);
     mat4_t root = mat4_mul_mat4(scale, translation);
     return scene_from_file("azura/azura.scn", root);
 }
