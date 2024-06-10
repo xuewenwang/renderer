@@ -212,19 +212,42 @@ static int clip_against_plane(
     for (i = 0; i < in_num_vertices; i++) {
         int prev_index = (i - 1 + in_num_vertices) % in_num_vertices;
         int curr_index = i;
+        printf("xww: i=%d, prev_index=%d, curr_index=%d\n", i, prev_index, curr_index);
+        //i=0 prev_index=2 curr_index=0
+        //i=1 prev_index=0 curr_index=1
+        //i=2 prev_index=1 curr_index=2
         vec4_t prev_coord = in_coords[prev_index];
         vec4_t curr_coord = in_coords[curr_index];
+        printf("xww: i=%d, prev_coord=%f %f %f %f, curr_coord=%f %f %f %f\n", i, prev_coord.x, prev_coord.y, 
+            prev_coord.z, prev_coord.w, curr_coord.x, curr_coord.y, curr_coord.z, curr_coord.w);
+
         float *prev_varyings = (float*)in_varyings[prev_index];
         float *curr_varyings = (float*)in_varyings[curr_index];
         int prev_inside = is_inside_plane(prev_coord, plane);
         int curr_inside = is_inside_plane(curr_coord, plane);
 
+        //xww: plane = 3 in_num_vertices = 3 varying_num_floats = 11
+        //xww : i = 0, prev_index = 2, curr_index = 0
+        //xww : i = 0, prev_coord = 1.039231 1.385641 1.021127 1.221105, curr_coord = 0.259808 0.346410 1.015162 1.215140
+        //xww : i = 0, prev_inside = 0, curr_inside = 1
+        //xww : i = 0, ratio = 0.159239, dest_coord = 0.915116 1.220155 1.020177 1.220155
+        //xww : i = 1, prev_index = 0, curr_index = 1
+        //xww : i = 1, prev_coord = 0.259808 0.346410 1.015162 1.215140, curr_coord = 0.779423 0.346410 1.018291 1.218269
+        //xww : i = 1, prev_inside = 1, curr_inside = 1
+        //xww : i = 2, prev_index = 1, curr_index = 2
+        //xww : i = 2, prev_coord = 0.779423 0.346410 1.018291 1.218269, curr_coord = 1.039231 1.385641 1.021127 1.221105
+        //xww : i = 2, prev_inside = 1, curr_inside = 0
+        //xww : i = 2, ratio = 0.841242, dest_coord = 0.997984 1.220655 1.020677 1.220655
+        //xww : plane = 3 out_num_vertices = 4
+        printf("xww: i=%d, prev_inside=%d, curr_inside=%d\n", i, prev_inside, curr_inside);
         if (prev_inside != curr_inside) {
             vec4_t *dest_coord = &out_coords[out_num_vertices];
             float *dest_varyings = (float*)out_varyings[out_num_vertices];
+            // (prev.w - prev.y) / ((prev.w - prev.y) - (curr.w - curr.y));  //-0.164536 / (-0.164536) - (0.86873) = 0.13127
             float ratio = get_intersect_ratio(prev_coord, curr_coord, plane);
 
             *dest_coord = vec4_lerp(prev_coord, curr_coord, ratio);
+            printf("xww: i=%d, ratio=%f, dest_coord=%f %f %f %f\n", i, ratio, dest_coord->x, dest_coord->y, dest_coord->z, dest_coord->w);
             /*
              * since this computation is performed in clip space before
              * division by w, clipped varying values are perspective-correct
@@ -248,6 +271,7 @@ static int clip_against_plane(
         }
     }
     assert(out_num_vertices <= MAX_VARYINGS);
+    printf("xww: plane=%d out_num_vertices=%d\n", plane, out_num_vertices);
     return out_num_vertices;
 }
 
@@ -296,7 +320,7 @@ static int clip_triangle(
         memcpy(out_varyings[2], in_varyings[2], sizeof_varyings);
         return 3;
     } else {
-        printf("xww: clip_triangle\n");
+        printf("xww: clip_triangle, v0_visible=%d v1_visible=%d v2_visible=%d\n", v0_visible, v1_visible, v2_visible);
         int varying_num_floats = sizeof_varyings / sizeof(float);  //varying_num_floats=11
         int num_vertices = 3;
         CLIP_IN2OUT(POSITIVE_W);
@@ -494,16 +518,16 @@ static int rasterize_triangle(framebuffer_t *framebuffer, program_t *program,
         ndc_coords[i] = vec3_div(clip_coord, clip_coords[i].w);
     }
 
-    printf("xww: ndc_coords:%f %f %f, %f %f %f, %f %f %f\n", ndc_coords[0].x, ndc_coords[0].y, ndc_coords[0].z,
+    printf("xww: ndc_coords:(%f %f %f), (%f %f %f), (%f %f %f)\n", ndc_coords[0].x, ndc_coords[0].y, ndc_coords[0].z,
         ndc_coords[1].x, ndc_coords[1].y, ndc_coords[1].z, ndc_coords[2].x, ndc_coords[2].y, ndc_coords[2].z);
 
     /* back-face culling */
     backface = is_back_facing(ndc_coords);
+    printf("xww:backface=%d\n", backface);
+
     if (backface && !program->double_sided) {
         return 1;
     }
-
-    printf("xww:backface=%d\n", backface);
 
     /* reciprocals of w */
     for (i = 0; i < 3; i++) {
@@ -564,6 +588,7 @@ void graphics_draw_triangle(framebuffer_t *framebuffer, program_t *program) {
 
     /* triangle clipping */
     //sizeof_varyings=sizeof(blinn_varyings_t);
+    // out_coordsºÍout_varyingsÔÚclip_triangle¸³Öµ
     num_vertices = clip_triangle(program->sizeof_varyings,
                                  program->in_coords, program->in_varyings,
                                  program->out_coords, program->out_varyings);

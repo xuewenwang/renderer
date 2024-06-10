@@ -12,6 +12,7 @@ static mat4_t get_model_matrix(blinn_attribs_t *attribs,
         mat4_t joint_matrices[4];
         mat4_t skin_matrix;
 
+        printf("xww get_model_matrix joint_matrices\n");
         joint_matrices[0] = uniforms->joint_matrices[(int)attribs->joint.x];
         joint_matrices[1] = uniforms->joint_matrices[(int)attribs->joint.y];
         joint_matrices[2] = uniforms->joint_matrices[(int)attribs->joint.z];
@@ -20,6 +21,7 @@ static mat4_t get_model_matrix(blinn_attribs_t *attribs,
         skin_matrix = mat4_combine(joint_matrices, attribs->weight);
         return mat4_mul_mat4(uniforms->model_matrix, skin_matrix);
     } else {
+        //printf("xww get_model_matrix\n");
         return uniforms->model_matrix;
     }
 }
@@ -72,6 +74,7 @@ static vec4_t common_vertex_shader(blinn_attribs_t *attribs,
     vec3_t input_normal = attribs->normal;
     vec3_t world_normal = mat3_mul_vec3(normal_matrix, input_normal);
 
+    printf("xww: world_position=%f %f %f %f\n", world_position.x, world_position.y, world_position.z, world_position.w);
     printf("xww: clip_position=%f %f %f %f\n", clip_position.x, clip_position.y, clip_position.z, clip_position.w);
     varyings->world_position = vec3_from_vec4(world_position);
     varyings->depth_position = vec3_from_vec4(depth_position);
@@ -127,6 +130,7 @@ static material_t get_material(blinn_varyings_t *varyings,
 
     diffuse = vec3_from_vec4(uniforms->basecolor);
     alpha = uniforms->basecolor.w;
+    //printf("xww get_material, diffuse_map=0x%x specular_map=0x%x emission_map=0x%x\n", uniforms->diffuse_map, uniforms->specular_map, uniforms->emission_map);
     if (uniforms->diffuse_map) {
         vec4_t sample = texture_sample(uniforms->diffuse_map, texcoord);
         diffuse = vec3_modulate(diffuse, vec3_from_vec4(sample));
@@ -309,13 +313,15 @@ static void draw_model(model_t *model, framebuffer_t *framebuffer,
         if (i > 0) break;
         static int count = 0;
         //if(count++ % 180 ==0)
-            printf("xww: num_faces=%d distance=%f\n", num_faces, model->distance);
-        vertices[0 * 3 + 0].position.x = 6.2;
-        vertices[0 * 3 + 0].position.y = 1.2;
-        vertices[0 * 3 + 1].position.x = 2.0;
-        vertices[0 * 3 + 1].position.y = 2.0;
-        vertices[0 * 3 + 2].position.x = 8.4;
-        vertices[0 * 3 + 2].position.y = 2.0;
+        printf("xww: num_faces=%d distance=%f\n", num_faces, model->distance);
+        vertices[0 * 3 + 0].position.x = 0.2;
+        vertices[0 * 3 + 0].position.y = 0.2;
+
+        vertices[0 * 3 + 1].position.x = 0.6;
+        vertices[0 * 3 + 1].position.y = 0.2;
+
+        vertices[0 * 3 + 2].position.x = 0.8;
+        vertices[0 * 3 + 2].position.y = 0.8;
 
         for (j = 0; j < 3; j++) {
             // build_meshÉèÖÃposition¡¢texcoord¡¢normal
